@@ -21,4 +21,9 @@ urlpatterns = [
     path('api/comments/<int:comment_id>/replies/', views.get_replies, name='get-replies'),
     path("api/comments/<int:comment_id>/delete/", views.comment_delete, name="comment-delete"),
     path('api/comments/<int:comment_id>/replies/<int:reply_id>/delete/', views.delete_reply, name='delete-reply'),
+
+    path('api/certificates/', views.certificate_list, name='certificate-list'),
+    path('api/certificates/create/', views.certificate_create, name='certificate-create'),
+    path('api/certificates/<int:pk>/update/', views.certificate_update, name='certificate-update'),
+    path('api/certificates/<int:pk>/delete/', views.certificate_delete, name='certificate-delete'),
 ]

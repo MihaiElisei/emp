@@ -14,6 +14,31 @@ class CustomUser(AbstractUser):
     def __str__(self):
         return self.username
 
+class Certificates(models.Model):
+    title = models.CharField(max_length=255)
+    slug = models.SlugField(max_length=255, unique=True, blank=True)
+    description = models.TextField()
+    certificate_image = models.ImageField(upload_to="certificates/", null=True, blank=True)
+    issued_by = models.CharField(max_length=255)
+    issue_date = models.DateField()
+    expiration_date = models.DateField(null=True, blank=True)
+    url = models.URLField(blank=True, null=True)
+
+    class Meta:
+        ordering = ["-issue_date"]
+
+    def __str__(self):
+        return self.title
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            base_slug = slugify(self.title)
+            slug = base_slug
+            while Certificates.objects.filter(slug=slug).exists():
+                slug = f"{base_slug}-{uuid.uuid4().hex[:6]}"
+            self.slug = slug
+
+        super().save(*args, **kwargs)
 
 class Project(models.Model):
 

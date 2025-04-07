@@ -535,3 +535,71 @@ def delete_reply(request, comment_id, reply_id):
 
     reply.delete()
     return Response({"detail": "Reply deleted successfully."}, status=status.HTTP_204_NO_CONTENT)
+
+# ----------------------------------------
+# List Certificates API
+# ----------------------------------------
+
+@api_view(['GET'])
+def certificate_list(request):
+    """
+    List all certificates.
+    """
+    certificates = Certificates.objects.all()
+    serializer = CertificatesSerializer(certificates, many=True)
+    return Response(serializer.data)
+
+# ----------------------------------------
+# Create Certificate API
+# ----------------------------------------
+
+@api_view(['POST'])
+@permission_classes([IsAdminUser])
+def certificate_create(request):
+    """
+    Create a new certificate.
+    """
+    serializer = CertificatesSerializer(data=request.data)
+    if serializer.is_valid():
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+# ----------------------------------------
+# Update Certificate API
+# ----------------------------------------
+
+@api_view(['PUT'])
+@permission_classes([IsAdminUser])
+def certificate_update(request, pk):
+    """
+    Update an existing certificate by its ID.
+    """
+    try:
+        certificate = Certificates.objects.get(pk=pk)
+    except Certificates.DoesNotExist:
+        return Response({'error': 'Certificate not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+    serializer = CertificatesSerializer(certificate, data=request.data)
+    if serializer.is_valid():
+        serializer.save()
+        return Response(serializer.data)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+# ----------------------------------------
+# Delete Certificate API
+# ----------------------------------------
+
+@api_view(['DELETE'])
+@permission_classes([IsAdminUser])
+def certificate_delete(request, pk):
+    """
+    Delete a certificate by its ID.
+    """
+    try:
+        certificate = Certificates.objects.get(pk=pk)
+    except Certificates.DoesNotExist:
+        return Response({'error': 'Certificate not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+    certificate.delete()
+    return Response({'message': 'Certificate deleted successfully.'}, status=status.HTTP_204_NO_CONTENT)

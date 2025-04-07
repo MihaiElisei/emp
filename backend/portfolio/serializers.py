@@ -161,4 +161,8 @@ class ArticleSerializer(serializers.ModelSerializer):
         model = Article
         fields = "__all__"
         extra_kwargs = {"author": {"read_only": True}}
-        
+
+class CertificatesSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Certificates
+        fields = '__all__'  

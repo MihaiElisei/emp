@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
-from .models import Article, CustomUser, Project
+from .models import *
 from django.utils.translation import gettext_lazy as _
 from django.utils.html import format_html
 
@@ -66,3 +66,24 @@ class ArticleAdmin(admin.ModelAdmin):
     ordering = ("-published_date",)
     prepopulated_fields = {"slug": ("title",)}
 admin.site.register(Article, ArticleAdmin)
+
+class CommentAdmin(admin.ModelAdmin):
+    list_display = ('id', 'author', 'content_type', 'object_id', 'content', 'created_at')
+    search_fields = ('content', 'author__username', 'author__full_name')
+    list_filter = ('content_type', 'created_at')
+    date_hierarchy = 'created_at'
+    readonly_fields = ('id', 'author', 'created_at')
+
+    def get_queryset(self, request):
+        queryset = super().get_queryset(request)
+        return queryset.select_related('author')
+
+admin.site.register(Comment, CommentAdmin)
+
+class CertificatesAdmin(admin.ModelAdmin):
+    list_display = ('title', 'slug', 'issued_by', 'issue_date', 'expiration_date')
+    search_fields = ('title', 'issued_by')
+    list_filter = ('issue_date', 'expiration_date')
+    prepopulated_fields = {'slug': ('title',)}
+
+admin.site.register(Certificates, CertificatesAdmin)
