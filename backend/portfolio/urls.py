@@ -15,5 +15,10 @@ urlpatterns = [
     path('api/articles/id/<int:pk>/', views.article_detail_by_id, name='article_detail_by_id'),
     path("api/articles/<slug:slug>/", views.article_detail, name="article-detail"),
     path('api/delete-article/<int:pk>/', views.delete_article, name='delete_article'),
-    
+
+    path("api/comments/<str:content_type>/<int:object_id>/", views.comment_list_create, name="comment-list-create"),
+    path('api/comments/<str:content_type>/<int:object_id>/<int:comment_id>/replies/', views.add_reply, name='add_reply'),
+    path('api/comments/<int:comment_id>/replies/', views.get_replies, name='get-replies'),
+    path("api/comments/<int:comment_id>/delete/", views.comment_delete, name="comment-delete"),
+    path('api/comments/<int:comment_id>/replies/<int:reply_id>/delete/', views.delete_reply, name='delete-reply'),
 ]

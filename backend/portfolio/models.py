@@ -2,6 +2,8 @@ from django.db import models
 from django.utils.text import slugify
 from django.utils import timezone
 from django.contrib.auth.models import AbstractUser
+from django.contrib.contenttypes.models import ContentType
+from django.contrib.contenttypes.fields import GenericForeignKey
 from django.utils.translation import gettext_lazy as _
 import uuid
 
@@ -115,3 +117,18 @@ class Article(models.Model):
 
     def __str__(self):
         return self.title
+    
+class Comment(models.Model):
+    content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
+    object_id = models.PositiveIntegerField()
+    content_object = GenericForeignKey("content_type", "object_id")
+    author = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    content = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    # Parent comment field to support replies
+    parent_comment = models.ForeignKey('self', null=True, blank=True, related_name='replies', on_delete=models.CASCADE)
+
+    def __str__(self):
+        content_preview = self.content[:50] + "..." if len(self.content) > 50 else self.content
+        return f"Comment by {self.author} on {self.content_object} - {content_preview}"

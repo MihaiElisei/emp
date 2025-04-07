@@ -2,7 +2,7 @@ from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
-from .models import Article, Project
+from .models import *
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -126,11 +126,27 @@ class SimpleAuthorSerializer(serializers.ModelSerializer):
 
         # No image found
         return None
+    
+class CommentSerializer(serializers.ModelSerializer):
+    author = SimpleAuthorSerializer(read_only=True)
+    content_object = serializers.SerializerMethodField()  
+    class Meta:
+        model = Comment
+        fields = "__all__"
+        read_only_fields = ["id", "author", "created_at"]
+
+    def get_content_object(self, obj):
+        """Returns a more human-readable reference to the related object."""
+        if isinstance(obj.content_object, Article):
+            return {"type": "article", "title": obj.content_object.title, "id": obj.object_id}
+        elif isinstance(obj.content_object, Project):
+            return {"type": "project", "title": obj.content_object.title, "id": obj.object_id}
+        return None
 
 class ProjectSerializer(serializers.ModelSerializer):
     author = SimpleAuthorSerializer(read_only=True)
     category_display = serializers.CharField(source="get_category_display", read_only=True)
-    
+    comments = CommentSerializer(many=True, read_only=True)
 
     class Meta:
         model = Project
@@ -139,8 +155,10 @@ class ProjectSerializer(serializers.ModelSerializer):
 class ArticleSerializer(serializers.ModelSerializer):
     author = SimpleAuthorSerializer(read_only=True)
     category_display = serializers.CharField(source="get_category_display", read_only=True)
+    comments = CommentSerializer(many=True, read_only=True)
 
     class Meta:
         model = Article
         fields = "__all__"
         extra_kwargs = {"author": {"read_only": True}}
+        

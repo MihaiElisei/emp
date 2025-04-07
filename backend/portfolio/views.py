@@ -12,7 +12,7 @@ from django.views.decorators.csrf import csrf_exempt
 
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import AllowAny, IsAuthenticated, IsAdminUser
+from rest_framework.permissions import AllowAny, IsAuthenticated, IsAdminUser, IsAuthenticatedOrReadOnly
 from rest_framework.response import Response
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -398,3 +398,140 @@ def delete_article(request, pk):
 
     article.delete()  # Perform delete operation
     return Response({"message": "Article deleted."}, status=status.HTTP_204_NO_CONTENT)
+
+
+# ----------------------------------------
+# List and Create Comments
+# ----------------------------------------
+
+@api_view(["GET", "POST"])
+@permission_classes([IsAuthenticatedOrReadOnly])
+def comment_list_create(request, content_type, object_id):
+    """Retrieve or create comments for an article or project"""
+
+    content_type = content_type.lower()
+    valid_content_types = {"project", "article"}
+    if content_type not in valid_content_types:
+        return Response({"error": "Invalid content type"}, status=status.HTTP_400_BAD_REQUEST)
+
+    model_class = Project if content_type == "project" else Article
+    related_object = get_object_or_404(model_class, id=object_id)
+
+    # Get the ContentType instance for the related object
+    model_type = ContentType.objects.get_for_model(model_class)
+
+    if request.method == "GET":
+        # Fetch all comments related to the object, with pagination
+        comments = Comment.objects.filter(content_type=model_type, object_id=object_id).order_by("-created_at")
+        
+        # Apply pagination
+        paginator = StandardResultsSetPagination()
+        result_page = paginator.paginate_queryset(comments, request)
+        serializer = CommentSerializer(result_page, many=True)
+        
+        return paginator.get_paginated_response(serializer.data)
+
+    elif request.method == "POST":
+        # Create a new comment
+        serializer = CommentSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save(author=request.user, content_type=model_type, object_id=object_id)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+# ----------------------------------------
+# Add Reply to Comment
+# ----------------------------------------
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def add_reply(request, content_type, object_id, comment_id):
+    """Add a reply to a comment"""
+
+    content_type = content_type.lower()
+    if content_type not in ["project", "article"]:
+        return JsonResponse({"error": "Invalid content type"}, status=400)
+
+    model_class = Project if content_type == "project" else Article
+    related_object = get_object_or_404(model_class, id=object_id)
+    model_type = ContentType.objects.get_for_model(model_class)
+
+    # Retrieve the parent comment efficiently
+    parent_comment = get_object_or_404(Comment, id=comment_id, content_type=model_type, object_id=object_id)
+    
+    reply_content = request.data.get("content")
+    if not reply_content:
+        return JsonResponse({'error': 'Content is required'}, status=400)
+
+    reply = Comment.objects.create(
+        content=reply_content,
+        author=request.user,
+        content_type=model_type,
+        object_id=object_id,
+        parent_comment=parent_comment
+    )
+
+    # Return the created reply data
+    return JsonResponse({
+        'id': reply.id,
+        'content': reply.content,
+        'author': reply.author.username,
+        'created_at': reply.created_at.isoformat(),
+        'parent_comment': parent_comment.id
+    }, status=201)
+
+
+# ----------------------------------------
+# Get All Replies for a Comment
+# ----------------------------------------
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticatedOrReadOnly])
+def get_replies(request, comment_id):
+    """Get all replies for a specific comment"""
+    
+    replies = Comment.objects.filter(parent_comment_id=comment_id).select_related('author').order_by("-created_at")
+
+    if not replies.exists():
+        return Response({"detail": "No replies found."}, status=status.HTTP_404_NOT_FOUND)
+    
+    reply_serializer = CommentSerializer(replies, many=True)
+    return Response(reply_serializer.data, status=status.HTTP_200_OK)
+
+
+# ----------------------------------------
+# Delete a Comment
+# ----------------------------------------
+@api_view(["DELETE"])
+@permission_classes([IsAuthenticated])
+def comment_delete(request, comment_id):
+    """Delete a comment if the logged-in user is the author"""
+
+    # Fetch the comment and ensure the user is authorized
+    comment = get_object_or_404(Comment, id=comment_id)
+    if comment.author != request.user:
+        return Response({"error": "You are not authorized to delete this comment"}, status=status.HTTP_403_FORBIDDEN)
+
+    comment.delete()
+    return Response({"message": "Comment deleted"}, status=status.HTTP_204_NO_CONTENT)
+
+
+# ----------------------------------------
+# Delete a Reply
+# ----------------------------------------
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
+def delete_reply(request, comment_id, reply_id):
+    """Delete a reply if the logged-in user is the author"""
+    
+    # Fetch the comment and the reply
+    comment = get_object_or_404(Comment, id=comment_id)
+    reply = get_object_or_404(Comment, id=reply_id, parent_comment=comment)
+
+    # Ensure the user is authorized to delete the reply
+    if reply.author != request.user:
+        return Response({"detail": "You are not authorized to delete this reply."}, status=status.HTTP_403_FORBIDDEN)
+
+    reply.delete()
+    return Response({"detail": "Reply deleted successfully."}, status=status.HTTP_204_NO_CONTENT)
