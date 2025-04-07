@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
-from .models import CustomUser
+from .models import CustomUser, Project
 from django.utils.translation import gettext_lazy as _
 from django.utils.html import format_html
 
@@ -44,6 +44,17 @@ class CustomUserAdmin(UserAdmin):
             'fields': ('profile_picture', )
         }),
     )
-
-
 admin.site.register(CustomUser, CustomUserAdmin)
+
+class ProjectAdmin(admin.ModelAdmin):
+    """
+    Admin configuration for the Project model.
+    Provides list display, search, and filtering options.
+    """
+    list_display = ('title', 'category', 'is_draft', 'published_date')
+    list_filter = ('category', 'is_draft')
+    search_fields = ('title', 'description')
+    prepopulated_fields = {'slug': ('title',)}
+    ordering = ('-published_date',)
+
+admin.site.register(Project, ProjectAdmin)

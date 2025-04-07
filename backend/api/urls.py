@@ -13,6 +13,7 @@ urlpatterns = [
 
     # User Registration API
     path('api/user/register/', user_create, name='user_create'),
+    path('api/update-profile/', update_user, name='update_profile'),
 
     # JWT Authentication endpoints
     path('api/token/', CustomTokenObtainPairView.as_view(), name='token_obtain_pair'),  # Get access & refresh tokens
