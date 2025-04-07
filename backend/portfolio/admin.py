@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
-from .models import CustomUser, Project
+from .models import Article, CustomUser, Project
 from django.utils.translation import gettext_lazy as _
 from django.utils.html import format_html
 
@@ -58,3 +58,11 @@ class ProjectAdmin(admin.ModelAdmin):
     ordering = ('-published_date',)
 
 admin.site.register(Project, ProjectAdmin)
+
+class ArticleAdmin(admin.ModelAdmin):
+    list_display = ("title", "category", "author", "is_draft", "published_date", "created_at")
+    list_filter = ("category", "is_draft", "author")
+    search_fields = ("title", "content", "author__email")
+    ordering = ("-published_date",)
+    prepopulated_fields = {"slug": ("title",)}
+admin.site.register(Article, ArticleAdmin)

@@ -51,8 +51,8 @@ class Project(models.Model):
         if not self.slug:
             base_slug = slugify(self.title)
             slug = base_slug
-            if Project.objects.filter(slug=slug).exists():
-                slug = f"{base_slug}-{uuid.uuid4().hex[:6]}" 
+            while Project.objects.filter(slug=slug).exists():
+                slug = f"{base_slug}-{uuid.uuid4().hex[:6]}"
             self.slug = slug
 
         if not self.is_draft and not self.published_date:
@@ -63,3 +63,55 @@ class Project(models.Model):
     def get_category_display(self):
         """ Get the human-readable category name. """
         return dict(self.PROJECT_CATEGORIES).get(self.category, "Other")
+    
+    
+class Article(models.Model):
+    CATEGORY_CHOICES = [
+        ("tech", "Technology"),
+        ("programming", "Programming"),
+        ("web_dev", "Web Development"),
+        ("ai_ml", "Artificial Intelligence & Machine Learning"),
+        ("cybersecurity", "Cybersecurity"),
+        ("software", "Software Engineering"),
+        ("business", "Business & Startups"),
+        ("data_science", "Data Science"),
+        ("finance", "Finance & Investment"),
+        ("design", "UI/UX & Product Design"),
+        ("other", "Other"),
+    ]
+
+    title = models.CharField(max_length=255)
+    slug = models.SlugField(max_length=255, unique=True, blank=True)
+    content = models.TextField()
+    article_image = models.ImageField(upload_to="articles/", null=True, blank=True)
+    author = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, related_name="articles", null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    published_date = models.DateTimeField(null=True, blank=True)
+    is_draft = models.BooleanField(default=True)
+    category = models.CharField(max_length=50, choices=CATEGORY_CHOICES, default="other")
+
+    class Meta:
+        ordering = ["-published_date"]
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            base_slug = slugify(self.title)
+            slug = base_slug
+            while Article.objects.filter(slug=slug).exists():  
+                slug = f"{base_slug}-{uuid.uuid4().hex[:6]}"
+            self.slug = slug
+
+        if self.is_draft:
+            self.published_date = None
+        elif not self.published_date:
+            self.published_date = timezone.now()
+
+        super().save(*args, **kwargs)
+    
+    def get_category_display(self):
+        """ Get the human-readable category name. """
+        return dict(self.CATEGORY_CHOICES).get(self.category, "Other")
+
+    def __str__(self):
+        return self.title

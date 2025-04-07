@@ -2,7 +2,7 @@ from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
-from .models import Project
+from .models import Article, Project
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -135,3 +135,12 @@ class ProjectSerializer(serializers.ModelSerializer):
     class Meta:
         model = Project
         fields = "__all__"
+
+class ArticleSerializer(serializers.ModelSerializer):
+    author = SimpleAuthorSerializer(read_only=True)
+    category_display = serializers.CharField(source="get_category_display", read_only=True)
+
+    class Meta:
+        model = Article
+        fields = "__all__"
+        extra_kwargs = {"author": {"read_only": True}}

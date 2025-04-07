@@ -296,3 +296,105 @@ def delete_project(request, pk):
 
     project.delete()
     return Response({"message": "Project deleted."}, status=status.HTTP_204_NO_CONTENT)
+
+
+# ----------------------------------------
+# Create Article API
+# ----------------------------------------
+
+@api_view(['POST', 'GET'])
+@permission_classes([IsAuthenticated])
+def create_article(request):
+
+    # If it's a GET request, return categories
+    if request.method == "GET":
+        return Response({"categories": Article.CATEGORY_CHOICES}, status=status.HTTP_200_OK)
+
+    # Use serializer to validate and save article data
+    serializer = ArticleSerializer(data=request.data)
+    if serializer.is_valid():
+        serializer.save(author=request.user)  # Set the current user as the author
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+# ----------------------------------------
+# List all Articles
+# ----------------------------------------
+
+@api_view(['GET'])
+def article_list(request):
+    articles = Article.objects.all()
+    paginator = StandardResultsSetPagination()
+    result_page = paginator.paginate_queryset(articles, request)
+    serializer = ArticleSerializer(result_page, many=True)
+    return paginator.get_paginated_response(serializer.data)
+
+# ----------------------------------------
+# Get Article Detail
+# ----------------------------------------
+
+@api_view(['GET'])
+def article_detail(request, slug):
+    article = get_object_or_404(Article, slug=slug)
+    serializer = ArticleSerializer(article)
+    return Response(serializer.data, status=status.HTTP_200_OK)
+
+@api_view(["GET"])
+def article_detail_by_id(request, pk):
+    article = get_object_or_404(Article, id=pk)
+    serializer = ArticleSerializer(article)
+    return Response(serializer.data, status=status.HTTP_200_OK)
+
+# ----------------------------------------
+# Update Article API
+# ----------------------------------------
+
+
+@api_view(['PUT'])
+@permission_classes([IsAuthenticated])
+def update_article(request, pk):
+    """
+    Update an article if the user is the author.
+    """
+    article = get_object_or_404(Article, id=pk)
+
+    # Check if the logged-in user is the author of the article
+    if not article.author or article.author != request.user:
+        return Response({"error": "You are not authorized to edit this article."}, status=status.HTTP_403_FORBIDDEN)
+
+    # Check if a new image is being uploaded
+    new_image = request.FILES.get("article_image")
+    if new_image:
+        # Delete the old image if it exists
+        if article.article_image and os.path.isfile(article.article_image.path):
+            try:
+                os.remove(article.article_image.path)
+            except Exception as e:
+                return Response({"error": f"Failed to delete old image: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    # Serialize the data and validate
+    serializer = ArticleSerializer(article, data=request.data, partial=True)
+
+    if serializer.is_valid():
+        serializer.save()  # Save the article (author remains the same)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+# ----------------------------------------
+# Delete Article API
+# ----------------------------------------
+
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
+def delete_article(request, pk):
+    article = get_object_or_404(Article, id=pk)
+
+    # Check if the user is the author or staff
+    if article.author != request.user and not request.user.is_staff:
+        return Response({"error": "Unauthorized"}, status=status.HTTP_403_FORBIDDEN)
+
+    article.delete()  # Perform delete operation
+    return Response({"message": "Article deleted."}, status=status.HTTP_204_NO_CONTENT)
