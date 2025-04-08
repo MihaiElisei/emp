@@ -115,10 +115,38 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background font-[Lora] text-zinc-900 dark:text-zinc-100
+    @apply bg-background font-[Lora] text-zinc-900 dark:text-zinc-100;
   }
 }
 
+/* UTILITIES */
+/* ================================ */
+
+.container {
+  @apply px-4 mx-auto lg:px-8 xl:max-w-6xl;
+}
+
+.section {
+  @apply pt-28 lg:pt-32 font-[Lora];
+}
+
+/* TYPOGRAPHY */
+/* ================================ */
+
+.headline-1 {
+  @apply text-4xl text-zinc-900 mx-auto md:mx-0 md:text-5xl leading-tight font-semibold lg:text-[55px] lg:leading-[1.15];
+  background: -webkit-linear-gradient(0deg, #18181b, #52525b);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.dark .headline-1 {
+  background: -webkit-linear-gradient(0deg, #fafafa, #a1a1a1);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
 
 /* COMPONENTS */
 /* ================================ */
@@ -126,21 +154,21 @@
 /* Navbar */
 
 .navbar {
-  @apply absolute top-full mt-2 right-0 min-w-40 p-2 bg-zinc-900 dark:bg-zinc-100 rounded-2xl ring-inset ring-1 ring-zinc-900 dark:ring-zinc-900 scale-90 isolate blur-sm opacity-0 invisible transition-[opacity,transform,filter] md:static md:flex md:items-center md:mt-0 md:opacity-100 md:blur-none md:visible md:scale-100 backdrop-blur-2xl
+  @apply absolute top-full mt-2 right-0 min-w-40 p-2 bg-zinc-900 dark:bg-zinc-100 rounded-2xl ring-inset ring-1 ring-zinc-900 dark:ring-zinc-900 scale-90 isolate blur-sm opacity-0 invisible transition-[opacity,transform,filter] md:static md:flex md:items-center md:mt-0 md:opacity-100 md:blur-none md:visible md:scale-100 backdrop-blur-2xl;
 }
 
-.navbar.active{
-  @apply opacity-100 scale-100 blur-none visible
+.navbar.active {
+  @apply opacity-100 scale-100 blur-none visible;
 }
 
 .nav-link {
-  @apply grid items-center  h-9 px-4 text-sm font-medium tracking-wide text-zinc-100 dark:text-zinc-900  hover:text-zinc-200 transition-colors
+  @apply grid items-center  h-9 px-4 text-sm font-medium tracking-wide text-zinc-100 dark:text-zinc-900  hover:text-zinc-200 transition-colors;
 }
 
 .nav-link.active {
-  @apply text-zinc-900 dark:text-zinc-100 duration-500
+  @apply text-zinc-900 dark:text-zinc-100 duration-500;
 }
 
 .navbar .active-box {
-  @apply absolute bg-zinc-100 dark:bg-zinc-900 rounded-lg -z-10 transition-[top,left] duration-500
+  @apply absolute bg-zinc-100 dark:bg-zinc-900 rounded-lg -z-10 transition-[top,left] duration-500;
 }
