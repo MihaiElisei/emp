@@ -172,3 +172,4 @@
 .navbar .active-box {
   @apply absolute bg-zinc-100 dark:bg-zinc-900 rounded-lg -z-10 transition-[top,left] duration-500;
 }
+
