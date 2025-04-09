@@ -1,5 +1,7 @@
 import json
 import os
+
+import requests
 from .serializers import *
 from django.http import JsonResponse
 
@@ -91,6 +93,39 @@ def user_detail(request):
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
+# ----------------------------------------
+# User Profile API
+# ----------------------------------------
+    
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def get_user_profile(request):
+    """Fetch the authenticated user's profile."""
+    user = request.user
+    profile, _ = Profile.objects.get_or_create(user=user)  # Ensure profile exists
+    serializer = UserSerializer(user)
+
+    # Always use uploaded image if it exists
+    profile_image_url = request.build_absolute_uri(profile.profile_image.url) if profile.profile_image else None
+
+    # Only fetch Google image if no uploaded image exists
+    if not profile_image_url and not user.has_usable_password():  
+        google_token = request.headers.get("Authorization", "").replace("Bearer ", "")
+        if google_token:
+            try:
+                google_user_info = requests.get(
+                    "https://www.googleapis.com/oauth2/v3/userinfo",
+                    headers={"Authorization": f"Bearer {google_token}"},
+                ).json()
+                profile_image_url = google_user_info.get("picture")
+            except requests.exceptions.RequestException:
+                profile_image_url = None
+
+    return Response({
+        "user": serializer.data,
+        "profile_image_url": profile_image_url  
+    }, status=status.HTTP_200_OK)
+    
 @api_view(["PUT"])
 @permission_classes([IsAuthenticated])
 def update_user(request):
@@ -138,24 +173,31 @@ def update_user(request):
 
 @login_required
 def google_login_callback(request):
-    user = request.user  # Get the authenticated user
-
-    # Retrieve social account
+    user = request.user
     social_account = SocialAccount.objects.filter(user=user, provider="google").first()
 
     if not social_account:
         return redirect('http://localhost:5173/login/callback/?error=NoSocialAccount')
 
-    # Retrieve Google token
     token = SocialToken.objects.filter(account=social_account).first()
 
     if token:
-        # Generate JWT tokens
         refresh = RefreshToken.for_user(user)
         access_token = str(refresh.access_token)
 
-        # Manually add `is_superuser`
         refresh["is_superuser"] = user.is_superuser
+        refresh["full_name"] = user.get_full_name()
+
+        google_profile_picture = social_account.extra_data.get('picture')
+        custom_profile_picture = user.profile_picture.url if user.profile_picture else None
+
+        if custom_profile_picture:
+            refresh["profile_picture"] = custom_profile_picture
+        elif google_profile_picture:
+            refresh["profile_picture"] = google_profile_picture
+        else:
+            refresh["profile_picture"] = None 
+
         access_token = str(refresh.access_token)
 
         return redirect(f'http://localhost:5173/login/callback/?access_token={access_token}')
@@ -189,7 +231,6 @@ def validate_google_token(request):
             return JsonResponse({'detail': 'Invalid JSON.'}, status=400)
 
     return JsonResponse({'detail': 'Method not allowed'}, status=405)
-
 
 # ----------------------------------------
 # Create Project API

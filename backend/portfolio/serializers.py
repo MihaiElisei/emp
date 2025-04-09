@@ -21,7 +21,7 @@ class UserSerializer(serializers.ModelSerializer):
         }
 
     def validate_password(self, value):
-        validate_password(value)
+        validate_password(value)  # Make sure the password validation is correctly done
         return value
 
     def get_full_name(self, obj):
@@ -36,7 +36,7 @@ class UserSerializer(serializers.ModelSerializer):
             if google_account and 'picture' in google_account.extra_data:
                 return google_account.extra_data['picture']
 
-        # Fallback to uploaded profile_picture
+        # Fallback to uploaded profile picture
         if obj.profile_picture:
             return request.build_absolute_uri(obj.profile_picture.url) if request else obj.profile_picture.url
 
@@ -86,9 +86,9 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     @classmethod
     def get_token(cls, user):
         token = super().get_token(user)
-
-        # Add custom claims
         token['is_superuser'] = user.is_superuser
+        token['full_name'] = user.get_full_name()
+        token['profile_image'] = UserSerializer(user).get_profile_image(user)
 
         return token
 

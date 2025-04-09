@@ -181,3 +181,4 @@ CORS_ALLOW_HEADERS = [
     "content-type",
     "x-google-access-token",  # Add this header
 ]
+LOGIN_REDIRECT_URL = '/callback/'

@@ -2,12 +2,16 @@
  * @copyright 2025 Mihai Elisei
  * @license Apache-2.0
  */
+
+import useAuthentication from "@/lib/hooks/useAuthentication";
 import { useEffect, useRef, useMemo } from "react";
-import { NavLink, useLocation } from "react-router-dom";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 
 const Navbar = ({ navOpen }) => {
   const activeBox = useRef(null);
   const location = useLocation();
+  const { isAuthorized, loading, logout } = useAuthentication();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const updateActiveBox = () => {
@@ -36,14 +40,13 @@ const Navbar = ({ navOpen }) => {
     { label: "Portfolio", path: "/portfolio" },
     { label: "Articles", path: "/articles" },
     { label: "Contact", path: "/contact" },
-    { label: "Login", path: "/auth" },
   ];
 
   const activePaths = useMemo(
     () => ({
       "/portfolio": [],
       "/articles": [],
-      "/login": [],
+      "/login": ["/login", "/auth", "/register"],
       "/": [],
     }),
     []
@@ -51,6 +54,11 @@ const Navbar = ({ navOpen }) => {
 
   const isPathActive = (path) =>
     activePaths[path]?.some((p) => location.pathname.startsWith(p));
+
+  const handleLogout = () => {
+    logout();
+    navigate("/");
+  };
 
   return (
     <nav className={`navbar ${navOpen ? "active" : ""}`}>
@@ -67,6 +75,30 @@ const Navbar = ({ navOpen }) => {
           {label}
         </NavLink>
       ))}
+
+      {!loading &&
+        (isAuthorized ? (
+          <NavLink
+            to="/"
+            onClick={handleLogout}
+            className="nav-link !text-zinc-100 dark:!text-zinc-900"
+          >
+            Logout
+          </NavLink>
+        ) : (
+          <NavLink
+            to="/login"
+            className={({ isActive }) =>
+              `nav-link ${
+                isActive || isPathActive("/login") || isPathActive("/register")
+                  ? "active"
+                  : ""
+              } md:ml-auto`
+            }
+          >
+            Login
+          </NavLink>
+        ))}
       <div className="active-box" ref={activeBox}></div>
     </nav>
   );
